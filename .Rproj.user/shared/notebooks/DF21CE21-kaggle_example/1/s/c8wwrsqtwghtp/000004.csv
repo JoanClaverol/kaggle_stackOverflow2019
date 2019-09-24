@@ -1,0 +1,30 @@
+"0","survey18 <- read_csv(""../data/raw_data/stack-overflow-2018-developer-survey/survey_results_public.csv"")
+"
+"2","Parsed with column specification:
+cols(
+  .default = col_character(),
+  Respondent = [32mcol_double()[39m,
+  AssessJob1 = [32mcol_double()[39m,
+  AssessJob2 = [32mcol_double()[39m,
+  AssessJob3 = [32mcol_double()[39m,
+  AssessJob4 = [32mcol_double()[39m,
+  AssessJob5 = [32mcol_double()[39m,
+  AssessJob6 = [32mcol_double()[39m,
+  AssessJob7 = [32mcol_double()[39m,
+  AssessJob8 = [32mcol_double()[39m,
+  AssessJob9 = [32mcol_double()[39m,
+  AssessJob10 = [32mcol_double()[39m,
+  AssessBenefits1 = [32mcol_double()[39m,
+  AssessBenefits2 = [32mcol_double()[39m,
+  AssessBenefits3 = [32mcol_double()[39m,
+  AssessBenefits4 = [32mcol_double()[39m,
+  AssessBenefits5 = [32mcol_double()[39m,
+  AssessBenefits6 = [32mcol_double()[39m,
+  AssessBenefits7 = [32mcol_double()[39m,
+  AssessBenefits8 = [32mcol_double()[39m,
+  AssessBenefits9 = [32mcol_double()[39m
+  # ... with 23 more columns
+)
+"
+"2","See spec(...) for full column specifications.
+"

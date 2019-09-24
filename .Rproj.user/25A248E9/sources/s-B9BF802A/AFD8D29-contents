@@ -1,0 +1,336 @@
+---
+title: "Stack overflow 2018 survey analysis"
+author: "Joan Claverol Romero - Data analytics mentor at Ubiqum Code Academy"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    self_contained: yes
+    css: corp-styles.css
+    highlight: pygments
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F, echo = F, 
+                      fig.align = "center")
+```
+```{r libraries and data}
+if (require(pacman) == FALSE) {
+  install.packages('pacman')
+}
+pacman::p_load(
+  tidyverse,
+  highcharter, 
+  caret,
+  modelr,
+  gridExtra, grid, ggrepel
+  )
+
+# import data
+data <- read_rds("../data/clean_data/data_splited.rds")
+```
+
+# Report purpose
+
+The goal of this report is to analyise the stack overflow survey made in 2018, here is the [link](https://www.kaggle.com/stackoverflow/stack-overflow-2018-developer-survey) to the data. We will put the focus on developers working as data analysts and data scientists. The main questions to answer would be:
+
+1. How much do they earn? We will only analyse the ones living in European countries like Germany, Spain or France. 
+2. Which are the technologies they use? Detect the used and desired languages, databases and frameworks. 
+
+First of all, we will define the profile we are interested on:
+
+* Not a student and not coding as a hobby
+* Age between "25 - 34 years old" or "35 - 44 years old"
+* Type of developer: Data or business analyst, Data scientist or machine learning specialist, Marketing or sales professional.
+
+# General analysis
+
+```{r filtering the data}
+data_profile <- c("Data or business analyst",
+                  "Marketing or sales professional",
+                  "Educator or academic researchers",
+                  "Data scientist or machine learning specialist",
+                  "Database administrator") 
+
+java_profile <- c("Full-stack developer", "QA or test developer",
+                  "Designer", "Front-end developer", "Back-end developer",
+                  "Game or graphics developer","Mobile developer", 
+                   "DevOps specialist")
+
+analyst_df <- data %>% 
+  filter(
+    Student == "No", Age %in% c("25 - 34 years old","35 - 44 years old"), 
+    ) %>% 
+  # extracting developer types
+  mutate(DevType.y = str_split(string = DevType.y, pattern = ";")) %>%
+  unnest(DevType.y) %>% 
+  filter(
+    DevType.y %in% java_profile
+    ) %>% 
+  distinct(Respondent, .keep_all = T) 
+```
+
+After filtering our the data, we have `r nrow(analyst_df)` respondents, in relation to the `r nrow(data)` we have before. 
+
+Let's see in where the respondents come from:
+
+```{r treemap countries}
+analyst_df %>% 
+  group_by(Country) %>% 
+  summarise(n = n()) %>% 
+  hchart("treemap", hcaes(x = Country, value = n, color = n))
+```
+
+## European salaries
+
+Now, let's find out which is the country where you can earn more money:
+
+```{r boxplot salary}
+euro_analysis <- analyst_df %>% 
+  filter(Country %in% c(
+    "Germany", "Spain", "Netherlands", "France","United Kingdom", "Italy",
+    "Belgium","Portugal","Greece","Sweden","Poland","Ireland","Switzerland",
+    "Austria","Norway","Luxemburg"), 
+    between(ConvertedSalary, 1, 100000)
+    ) 
+euro_analysis %>% 
+  group_by(Country) %>% 
+  summarise(median = median(ConvertedSalary, na.rm = T)) %>% 
+  right_join(y = euro_analysis, by = "Country") %>% 
+  ggplot() + 
+    geom_boxplot(aes(y = ConvertedSalary, x = reorder(Country,median)), 
+      color = "dodgerblue4") +
+    coord_flip() +
+    labs(title = "Salary analysis by European countries",
+         caption = "Stack Overflow Survay 2018") +
+    xlab(label = "") + ylab("Salary in $") +
+    theme_minimal()
+```
+
+# Actual and future technologies 
+
+## Operating system 
+
+```{r}
+analyst_df %>% 
+  group_by(OperatingSystem) %>% 
+  summarise(n = n(), 
+            median =median(ConvertedSalary, na.rm = T)) %>% 
+  drop_na() %>% 
+  ggplot(aes(x = reorder(OperatingSystem,n), y = median, size = n)) +
+    geom_count(color = "dodgerblue4") +
+    scale_radius(name = "Number of\nrespondents:") +
+    labs(title = "Operating system in relation to salary", 
+         caption = "Stack Overflow Survey 2018") +
+    ylab(label = "Median salary") +
+    xlab(label = "Operating system") + 
+    theme_minimal()
+```
+
+## Communication tools 
+
+```{r fig.width=8}
+analyst_df %>% 
+  mutate(CommunicationTools.y = str_split(string = CommunicationTools.y, pattern = ";")) %>%
+  unnest(CommunicationTools.y) %>% 
+  group_by(CommunicationTools.y) %>% 
+  summarise(n = n()) %>% 
+  rename(commun_tools = CommunicationTools.y) %>% 
+  drop_na() %>% 
+  ggplot() +
+    geom_col(aes(x = reorder(commun_tools, n), y = n), fill = "dodgerblue4") +
+    ylab(label = "Quantity of respondents") +
+    labs(title = "Communication tools used for data\nanalyst and scientist", 
+         caption = "Stack Overflow Survey 2018") +
+    coord_flip() +
+    theme_minimal() +
+    theme(
+      axis.title.y = element_blank()
+    )
+```
+
+## Language analysis
+
+```{r fig.height=4, fig.height=7}
+# Most used programming language for data analysist and scientist
+used_lang_plot <- analyst_df %>% 
+  mutate(LanguageWorkedWith.y = str_split(
+    string = LanguageWorkedWith.y, pattern = ";")) %>%
+  unnest(LanguageWorkedWith.y) %>% 
+  group_by(LanguageWorkedWith.y) %>% 
+  summarise(n_worked = n()) %>% 
+  rename(language = LanguageWorkedWith.y) %>% 
+  drop_na()
+
+# Desired language to learn
+desired_lang_plot <- analyst_df %>% 
+  mutate(LanguageDesireNextYear.y = str_split(
+    string = LanguageDesireNextYear.y, pattern = ";")) %>%
+  unnest(LanguageDesireNextYear.y) %>% 
+  group_by(LanguageDesireNextYear.y) %>% 
+  summarise(n_desired = n()) %>% 
+  rename(language = LanguageDesireNextYear.y) %>% 
+  drop_na()
+
+# define popular languages
+data_lang <- c("SQL", "R","Python","C","C#","C++")
+java_lang <- c("JavaScript","PHP","CSS","HTML","Java")
+
+# join the information oof both
+used_lang_plot %>% 
+  left_join(y = desired_lang_plot, by = "language")  %>% 
+  arrange(desc(n_worked, n_desired)) %>% 
+  head(15) %>% 
+  gather(n_desired, n_worked, key = "key", value = "value") %>% 
+  mutate(key = factor(key, levels = c("n_worked", "n_desired"),
+                      labels = c("Used language","Desired language"))) %>% 
+  ggplot(aes(x = key, y = value, 
+             color = language %in% java_lang, 
+             group = language)) +
+    geom_point() +
+    geom_line(alpha = 0.5) + 
+    geom_text_repel(aes(label = language), size = 4) +
+    scale_color_manual(values = c("gray","dodgerblue4")) +
+    ylab(label = "Count") +
+    xlab(label = "") +
+    labs(title = "Used vs. desired language", 
+         caption = "Stack Overflow survay 2018") +
+    theme_minimal() +
+    theme(
+      legend.position = "none",
+      axis.line.x = element_blank()
+    ) 
+```
+
+## Framework analysis
+
+```{r fig.height=4, fig.height=7}
+# Most used programming language for data analysist and scientist
+used_frame <- analyst_df %>% 
+  mutate(FrameworkWorkedWith.y = str_split(
+    string = FrameworkWorkedWith.y, pattern = ";")) %>%
+  unnest(FrameworkWorkedWith.y) %>% 
+  group_by(FrameworkWorkedWith.y) %>% 
+  summarise(n_worked = n()) %>% 
+  rename(framework = FrameworkWorkedWith.y) %>% 
+  drop_na()
+
+# Desired language to learn
+desired_frame <- analyst_df %>% 
+  mutate(FrameworkDesireNextYear.y = str_split(
+    string = FrameworkDesireNextYear.y, pattern = ";")) %>%
+  unnest(FrameworkDesireNextYear.y) %>% 
+  group_by(FrameworkDesireNextYear.y) %>% 
+  summarise(n_desired = n()) %>% 
+  rename(framework = FrameworkDesireNextYear.y) %>% 
+  drop_na()
+
+# define popular languages
+data_framework <- c("TensorFlow", "Spark","Torch/PyTorch","Hadoop")
+
+# join the information oof both
+used_frame %>% 
+  left_join(y = desired_frame, by = "framework")  %>% 
+  arrange(desc(n_worked, n_desired)) %>% 
+  head(15) %>% 
+  gather(n_desired, n_worked, key = "key", value = "value") %>% 
+  mutate(key = factor(key, levels = c("n_worked", "n_desired"),
+                      labels = c("Used framework","Desired framework"))) %>% 
+  ggplot(aes(x = key, y = value, 
+             color = framework %in% data_framework,
+             group = framework)) +
+    geom_point() +
+    geom_line(alpha = 0.5) + 
+    geom_text_repel(aes(label = framework), size = 4) +
+    scale_color_manual(values = c("gray","dodgerblue4")) +
+    xlab(label = "") +
+    labs(title = "Used vs. desired frameworks", 
+         caption = "Stack Overflow survay 2018") +
+    theme_minimal() +
+    theme(
+      legend.position = "none", 
+      axis.line.x = element_blank()
+    ) 
+```
+
+## Database technologies
+
+```{r fig.height=4, fig.height=7}
+# Most used programming language for data analysist and scientist
+used_database <- analyst_df %>% 
+  mutate(DatabaseWorkedWith.y = str_split(
+    string = DatabaseWorkedWith.y, pattern = ";")) %>%
+  unnest(DatabaseWorkedWith.y) %>% 
+  group_by(DatabaseWorkedWith.y) %>% 
+  summarise(n_worked = n()) %>% 
+  rename(database = DatabaseWorkedWith.y) %>% 
+  drop_na()
+
+# Desired language to learn
+desired_database <- analyst_df %>% 
+  mutate(DatabaseDesireNextYear.y = str_split(
+    string = DatabaseDesireNextYear.y, pattern = ";")) %>%
+  unnest(DatabaseDesireNextYear.y) %>% 
+  group_by(DatabaseDesireNextYear.y) %>% 
+  summarise(n_desired = n()) %>% 
+  rename(database = DatabaseDesireNextYear.y) %>% 
+  drop_na()
+
+# define popular languages
+data_relevants <- c("MySQL", "SQL Server","PostgreSQL","MongoDB",
+                    "SQLite", "Oracle","Google Cloud Storage")
+
+# join the information oof both
+used_database %>% 
+  left_join(y = desired_database, by = "database")  %>% 
+  arrange(desc(n_worked, n_desired)) %>% 
+  head(15) %>% 
+  gather(n_desired, n_worked, key = "key", value = "value") %>% 
+  mutate(key = factor(key, levels = c("n_worked", "n_desired"),
+                      labels = c("Used database","Desired database"))) %>% 
+  ggplot(aes(x = key, y = value, 
+             color = database %in% data_relevants,
+             group = database)) +
+    geom_point() +
+    geom_line(alpha = 0.5) + 
+    geom_text_repel(aes(label = database), size = 4) +
+    scale_color_manual(values = c("gray","dodgerblue4")) +
+    ylab(label = "Count") +
+    xlab(label = "") +
+    labs(title = "Used vs. desired databases", 
+         caption = "Stack Overflow survay 2018") +
+    theme_minimal() +
+    theme(
+      legend.position = "none", 
+      axis.line.x = element_blank()
+    ) 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

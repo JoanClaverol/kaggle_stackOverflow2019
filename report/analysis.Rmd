@@ -1,0 +1,211 @@
+---
+title: "Stack overflow 2018 analysis"
+author: "Joan Claverol Romero"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    self_contained: yes
+    css: corp-styles.css
+    highlight: pygments
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```
+
+```{r libraries}
+if (require(pacman) == FALSE) {
+  install.packages('pacman')
+}
+pacman::p_load(
+  tidyverse,
+  highcharter, 
+  caret,
+  modelr
+)
+```
+
+
+# Analysis of the stack overflow survay of 2018 
+
+## Definition of relevant paramaters
+
+Let's define the responder profile we are interested on:
+
+* Not a student and not coding as a hobby (why not?)
+* European or USA countries (Dollars or Euros)
+* Years coding (non prof. & and prof.) as a relavant opinion as more expertise
+* DevType = Data or business analyst, Data scientist or machine learning specialist, Marketing or sales professional, Product manager, Educator or academic researcher
+
+```{r import data}
+public <- read_rds("../data/clean_data/data_splited.rds")
+schema <- read_csv("../data/raw_data/stack-overflow-2018-developer-survey/survey_results_schema.csv")
+```
+
+## Origin of our survay participants 
+
+We will put the focus on countries using Euros or Dollars as currency (following currecny symbols):
+
+* EUR - Euro
+* GBP - United Kingdom Pound
+* USD - United states dollar
+* CAD - Canadian Dollar
+* AUD - Australian Dollar
+
+```{r analysing the origin of the}
+# define the relevant currancies to analyse
+relevant_currencies <- c("EUR","GBP","USD","CAD","AUD")
+
+# build the treemap
+public %>% 
+  dplyr::filter(CurrencySymbol %in% relevant_currencies) %>%  
+  group_by(Country) %>% 
+  summarise(n = n()) %>% 
+  hchart("treemap", hcaes(x = Country, value = n, color = n))
+```
+
+## Analysis of countries using Euro
+
+Overview of respondent countris using Euros and not being students:
+
+```{r euro analysis}
+euro_data <- public %>% 
+  filter(CurrencySymbol == "EUR" & Student == "No") 
+
+euro_data %>% 
+  group_by(Country) %>% 
+  summarise(n = n()) %>% 
+  hchart("treemap", hcaes(x = Country, value = n, color = n))
+```
+
+The responders using the Europe as a currancy represents the `r round((nrow(euro_data) / nrow(public))*100,2)` % of the data. Can we find relevant factor to predict it's salary?
+
+```{r include=FALSE}
+filtered_euro_data <- public %>% 
+  # filtering data by no student, no NA in converted salary or equal 0, 
+  # and age between 25 and 34
+  filter(Student == "No", !is.na(ConvertedSalary), 
+         between(ConvertedSalary, 1, 100000), 
+         Age %in% c("25 - 34 years old")) %>% 
+  # extract only the developer types we are interested
+  mutate(DevType.y = str_split(string = DevType.y, pattern = ";")) %>%
+  unnest(DevType.y) %>% 
+  filter(
+    DevType.y %in% c("Data or business analyst", 
+                     "Data scientist or machine learning specialist")
+    ) %>% 
+  nest(DevType.y) 
+
+euro_data <- filtered_euro_data %>% 
+  # select relevant variables 
+  select(
+    starts_with("LanguageWorkedWith_"), 
+    starts_with("DevType_"),
+    starts_with("CommunicationTools_"),starts_with("EducationTypes_"),
+    starts_with("SelfTaughtTypes_"),starts_with("DatabaseWorkedWith_"),
+    starts_with("PlatformWorkedWith_"), starts_with("FrameworkWorkedWith_"),
+    starts_with("IDE_"),starts_with("Methodology_"),
+    starts_with("VersionControl_"), starts_with("Gender_"),
+    ConvertedSalary,
+    Age, FormalEducation, UndergradMajor,
+    YearsCoding, YearsCodingProf, ConvertedSalary
+    ) %>% 
+  # dummify the categories to introduce them in the model 
+  fastDummies::dummy_columns(
+    c("Age","FormalEducation", "UndergradMajor","YearsCoding",
+      "YearsCodingProf")
+    ) %>% 
+  # unselect the variables with no dummies
+  select(
+    -Age, -FormalEducation, -UndergradMajor,-YearsCoding, -YearsCodingProf
+    ) %>% 
+  # replace all missing values by 0
+  replace(., is.na(.), 0)
+
+# create a linear model
+mod <- lm(ConvertedSalary ~ ., data = euro_data)
+
+# adding the resduals and the errors 
+euro_data %<>% 
+  add_predictions(model = mod, var = "resid") %>% 
+  mutate(errors = ConvertedSalary - resid)
+# analysing the errors
+euro_data %>% 
+  ggplot() +
+    geom_point(aes(x = ConvertedSalary, y = resid)) +
+    geom_abline(color = "red")
+
+```
+
+### Analysing related job opportunities
+
+```{r}
+public %>% 
+  select(DevType.x)
+```
+
+
+### Analysing Netherlands
+
+Filter the data based on:
+
+* No student
+
+```{r}
+public %>% 
+  filter(Country == "Netherlands", Student == "No") %>%   
+
+```
+
+
+
+
+## Analysing the amount of students in the data
+
+```{r}
+public %>% 
+  select(Student) %>% 
+  mutate(Student = as.factor(Student)) %>% 
+  skim() %>% pander()
+```
+
+
+
+
+
+
+
+### Focus on netherlands responses
+
+```{r}
+public_netherlands <- public %>% 
+  filter(Country == "Netherlands")
+```
+
+## Check for gender bias 
+
+```{r}
+public_netherlands %>% 
+  group_by(Gender) %>% 
+  summarise(n = n()) %>% 
+  ggplot() +
+    geom_col(aes(y = n, x = reorder(Gender, n)), 
+             fill = "white", color = "dodgerblue4", alpha = 0.4) + 
+    coord_flip() +
+    xlab(label = "Gender") + ylab(label = "Count") + 
+    theme_minimal() -> temp_p1
+plotly::ggplotly(temp_p1)
+```
+
+# Programming lenguage analysis
+
+## All data 
+
+```{r}
+public %>% 
+  
+```
+

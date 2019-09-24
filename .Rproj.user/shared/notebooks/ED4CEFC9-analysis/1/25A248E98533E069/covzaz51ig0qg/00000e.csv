@@ -1,0 +1,4 @@
+"0","public %>% "
+"0","  filter(Country == ""Netherlands"", Student == ""No"") %>%   ggplot() +"
+"0","    geom_boxplot(aes(y = ConvertedSalary, x = DevType)) -> p1"
+"0","plotly::ggplotly(p1)"

@@ -1,0 +1,8 @@
+"0","survey18 %>% "
+"0","  filter(!is.na(Country)) %>% "
+"0","  group_by(Country) %>% "
+"0","  count() %>% "
+"0","  arrange(desc(n)) %>% "
+"0","  #head(10) %>% "
+"0","  hchart('treemap',hcaes(x = Country, value = n, color = n)) %>% "
+"0","  hc_title(text = 'Countries from where overall respondents come from') "

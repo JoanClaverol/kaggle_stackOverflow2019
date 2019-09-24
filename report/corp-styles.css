@@ -1,0 +1,36 @@
+
+body {
+  font-family: Calibri, helvetica, sans-serif;
+}
+
+.title {
+  margin-right: 56px;
+  width: 68%;
+  color: rgb(240, 64, 55);
+}
+
+h1 {
+  color: rgb(128, 127, 126);
+  font-size: 127%;
+  font-weight: bold;
+}
+
+
+h2 {
+  color: rgb(128, 127, 126);
+  font-size: 121%;
+  font-weight: bold;
+}
+
+h3 {
+  color: rgb(128, 127, 126);
+  font-size: 109%;
+  font-weight: bold;
+}
+
+h4 {
+  color: rgb(128, 127, 126);
+  font-size: 100%;
+  font-weight: bold;
+  font-style: italic;
+}

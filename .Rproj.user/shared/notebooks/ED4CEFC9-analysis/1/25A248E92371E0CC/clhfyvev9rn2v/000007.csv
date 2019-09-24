@@ -1,0 +1,7 @@
+"0","language_tibble <- split_languages %>% 
+  as_tibble(.) %>% 
+  mutate(temp = NULL) %>% 
+  gather(key = ""col_name"", value = ""language"", -temp)
+"
+"2","
+"

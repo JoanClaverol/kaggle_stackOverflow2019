@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1568722573404.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F46E397B",
+    "lastKnownWriteTime" : 1568734721,
+    "last_content_update" : 1568734721019,
+    "path" : "~/Documents/UbiqumCodeAcademy/projects/kaggle_stackOverflowAnalysis2018/scripts/pre_process/feature_engineering.R",
+    "project_path" : "scripts/pre_process/feature_engineering.R",
+    "properties" : {
+        "cursorPosition" : "49,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

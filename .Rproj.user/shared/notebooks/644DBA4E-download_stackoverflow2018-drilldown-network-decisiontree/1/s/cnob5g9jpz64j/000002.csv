@@ -1,0 +1,7 @@
+"0","#Load worldgeojson for word map plot"
+"0","data(worldgeojson, package = ""highcharter"")"
+"0",""
+"0","#Grouping country by name and then counting number of respondent"
+"0","by_country <- survey_results_public %>% select(Country) %>% filter(!is.na(Country)) %>%group_by(Country) %>% summarise(n1=n())"
+"2","Error in .f(.x[[i]], ...) : object 'Country' not found
+"

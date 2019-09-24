@@ -1,0 +1,7 @@
+"0","if (require(pacman) == FALSE) {"
+"0","  install.packages('pacman')"
+"0","}"
+"0","pacman::p_load(tidyverse,highcharter,gridExtra, grid, ggrepel)"
+"0",""
+"0","# import data"
+"0","data <- read_csv(""../data/raw_data/stack-overflow-2018-developer-survey/survey_results_public.csv"")"

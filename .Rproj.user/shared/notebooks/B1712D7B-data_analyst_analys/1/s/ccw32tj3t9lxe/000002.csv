@@ -1,0 +1,7 @@
+"0","analyst_df %>% "
+"0","  group_by(Country) %>% "
+"0","  summarise(n = n()) %>% "
+"0","  hchart(""treemap"", hcaes(x = Country, value = n, color = n))"
+"2","`parse_quosure()` is deprecated as of rlang 0.2.0.
+Please use `parse_quo()` instead.
+[90mThis warning is displayed once per session.[39m"

@@ -1,0 +1,2 @@
+"0","public <- read_rds(""../data/clean_data/data_splited.rds"")"
+"0","schema <- read_csv(""../data/raw_data/stack-overflow-2018-developer-survey/survey_results_schema.csv"")"
